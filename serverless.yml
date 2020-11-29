@@ -1,0 +1,35 @@
+org: rikardfahlstrom
+app: pypadler
+service: scraper
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: eu-west-3 # Since Sls dashboard is not available in eu-north-1 (Stockholm)
+  stage: dev # app stage
+  profile: serverless # aws cli profile in ~/.aws/credentials
+  timeout: 30 # default timeout is 6 seconds
+
+functions:
+  pypadler:
+    handler: program.main
+    description: Main function of program.py
+    events:
+      - schedule: cron(5 6-21 * * ? *) # Run once per hour between 06-21
+
+plugins:
+  - serverless-python-requirements
+  - serverless-prune-plugin
+  - serverless-offline
+
+package:
+  exclude:
+    - venv**/**
+    - README.md
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+  prune:
+    automatic: true
+    number: 1
