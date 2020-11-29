@@ -9,10 +9,9 @@ from bs4 import BeautifulSoup
 import config
 
 
-def main():
+def main(event, context):
     padel_arenas = {'UTK': '145',
-                    'Padelcenter Fyrislund': '105',
-                    'Padelcenter Librobäck': '374'}
+                    'Padelcenter Fyrislund': '105'}
 
     combinations_to_query = itertools.product(padel_arenas.values(), get_future_dates(3))
 
@@ -21,7 +20,7 @@ def main():
         print(i)
 
         dfs.append(get_available_slots_from_combo(i))
-        sleep(2)
+        sleep(1)
 
     df_with_all_results = pd.concat(dfs)
 
@@ -134,4 +133,4 @@ def send_sms(message):
 
 
 if __name__ == '__main__':
-    main()
+    main('', '')
