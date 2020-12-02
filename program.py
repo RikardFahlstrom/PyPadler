@@ -24,20 +24,17 @@ def main(event, context):
 
     df_with_all_results = pd.concat(dfs)
 
-    df_with_all_results['interesting_time'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x), axis=1)
+    df_with_all_results['interesting_time_user1'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 18, 20), axis=1)
+    df_with_all_results['interesting_time_user2'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 19, 21), axis=1)
 
-    df_with_all_results_only_matches = df_with_all_results[df_with_all_results['interesting_time'] == 'Yes']
+    df_matches_user_1 = df_with_all_results[df_with_all_results['interesting_time_user1'] == 'Yes']
+    df_matches_user_2 = df_with_all_results[df_with_all_results['interesting_time_user2'] == 'Yes']
 
-    if df_with_all_results_only_matches.shape[0] > 0:
-        messages = []
-        for index, row in df_with_all_results_only_matches.iterrows():
-            messages.append("Available slot! \nArena: {} \nCourt: {} \nTime: {} - {}".format(
-                get_key(padel_arenas, row['arena']), row['court'], row['start_time'], row['end_time']))
+    user_1_messages = create_messages_for_matches(df_matches_user_1, padel_arenas)
+    user_2_messages = create_messages_for_matches(df_matches_user_2, padel_arenas)
 
-        for message in messages:
-            send_sms(message)
-    else:
-        print("No slot available")
+    send_sms(user_1_messages, config.to_phonenumber_user1)
+    send_sms(user_2_messages, config.to_phonenumber_user2)
 
 
 def get_future_dates(num_in_future):
@@ -106,12 +103,10 @@ def get_available_slots_from_combo(arena_and_date_tuple):
         return df
 
 
-def check_for_interesting_slots(df_with_available_times):
-    if df_with_available_times['start_time'].hour >= 18:
-        if df_with_available_times['start_time'].hour <= 20:
+def check_for_interesting_slots(df_with_available_times, min_start_hour, max_start_hour):
+    if df_with_available_times['start_time'].hour >= min_start_hour:
+        if df_with_available_times['start_time'].hour <= max_start_hour:
             return 'Yes'
-        else:
-            return 'No'
 
 
 def get_key(dict_name, val_to_check_for_key):
@@ -120,16 +115,34 @@ def get_key(dict_name, val_to_check_for_key):
             return key
 
 
-def send_sms(message):
-    response = requests.post(
-      'https://api.46elks.com/a1/sms',
-      auth=(config.API_USERNAME, config.API_PASSWORD),
-      data={
-        'from': 'PythonElk',
-        'to': config.to_phonenumber,
-        'message': message
-      }
-    )
+def send_sms(list_of_messages_to_send, user_phonenumber):
+
+    if len(list_of_messages_to_send) > 0:
+        for message in list_of_messages_to_send:
+            response = requests.post(
+              'https://api.46elks.com/a1/sms',
+              auth=(config.API_USERNAME, config.API_PASSWORD),
+              data={
+                'from': 'PyPadler',
+                'to': user_phonenumber,
+                'message': message
+              }
+            )
+        print(f"Message sent to {user_phonenumber}")
+    else:
+        print(f"No message for {user_phonenumber}")
+
+
+def create_messages_for_matches(df, dictionary_with_padel_arenas):
+
+    messages_to_send = []
+
+    if df.shape[0] > 0:
+        for index, row in df.iterrows():
+            messages_to_send.append("Available slot! \nArena: {} \nCourt: {} \nTime: {} - {}".format(
+                get_key(dictionary_with_padel_arenas, row['arena']), row['court'], row['start_time'], row['end_time']))
+
+    return messages_to_send
 
 
 if __name__ == '__main__':
