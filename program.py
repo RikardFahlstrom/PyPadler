@@ -24,17 +24,21 @@ def main(event, context):
 
     df_with_all_results = pd.concat(dfs)
 
-    df_with_all_results['interesting_time_user1'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 18, 20), axis=1)
-    df_with_all_results['interesting_time_user2'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 19, 21), axis=1)
+    df_with_all_results['interesting_time_user1'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 18, 20, 8, 20), axis=1)
+    df_with_all_results['interesting_time_user2'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 19, 21, None, None), axis=1)
+    df_with_all_results['interesting_time_user3'] = df_with_all_results.apply(lambda x: check_for_interesting_slots(x, 18, 20, 9, 20), axis=1)
 
     df_matches_user_1 = df_with_all_results[df_with_all_results['interesting_time_user1'] == 'Yes']
     df_matches_user_2 = df_with_all_results[df_with_all_results['interesting_time_user2'] == 'Yes']
+    df_matches_user_3 = df_with_all_results[df_with_all_results['interesting_time_user3'] == 'Yes']
 
     user_1_messages = create_messages_for_matches(df_matches_user_1, padel_arenas)
     user_2_messages = create_messages_for_matches(df_matches_user_2, padel_arenas)
+    user_3_messages = create_messages_for_matches(df_matches_user_3, padel_arenas)
 
     send_sms(user_1_messages, config.to_phonenumber_user1)
     send_sms(user_2_messages, config.to_phonenumber_user2)
+    send_sms(user_3_messages, config.to_phonenumber_user3)
 
 
 def get_future_dates(num_in_future):
@@ -100,13 +104,22 @@ def get_available_slots_from_combo(arena_and_date_tuple):
 
         df = pd.DataFrame(df_input).sort_values(by=['time'])
 
+        if df.shape[0] > 0:
+            df['dayofweek'] = df['start_time'].dt.dayofweek
+
         return df
 
 
-def check_for_interesting_slots(df_with_available_times, min_start_hour, max_start_hour):
-    if df_with_available_times['start_time'].hour >= min_start_hour:
-        if df_with_available_times['start_time'].hour <= max_start_hour:
-            return 'Yes'
+def check_for_interesting_slots(df_input, min_start_hour_weekday, max_start_hour_weekday, min_start_hour_weekend, max_start_hour_weekend):
+    if (min_start_hour_weekday is not None) & (df_input['dayofweek'] not in (5, 6)):
+        if df_input['start_time'].hour >= min_start_hour_weekday:
+            if df_input['start_time'].hour <= max_start_hour_weekday:
+                return 'Yes'
+
+    elif (min_start_hour_weekend is not None) & (df_input['dayofweek'] in (5, 6)):
+        if df_input['start_time'].hour >= min_start_hour_weekend:
+            if df_input['start_time'].hour <= max_start_hour_weekend:
+                return 'Yes'
 
 
 def get_key(dict_name, val_to_check_for_key):
