@@ -10,11 +10,12 @@ from bs4 import BeautifulSoup
 
 def main(event, context):
     padel_arenas = {'UTK': '145',
-                    'UPC Fyrislund': '105'}
+                    'UPC Fyrislund': '105',
+                    'World Padel': '802'}
 
     combinations_to_query = itertools.product(
         padel_arenas.values(),
-        get_future_dates(3))
+        get_future_dates(1))
 
     dfs = []
     for i in combinations_to_query:
