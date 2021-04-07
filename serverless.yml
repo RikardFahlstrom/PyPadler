@@ -15,7 +15,7 @@ functions:
     handler: program.main
     description: Main function of program.py
     events:
-      - schedule: cron(5 6-21 * * ? *) # Run once per hour between 06-21
+      - schedule: cron(0/15 6-21 * * ? *) # Run once per hour between 06-21
 
 plugins:
   - serverless-python-requirements
